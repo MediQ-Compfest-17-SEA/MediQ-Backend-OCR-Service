@@ -28,4 +28,9 @@ export class OcrController {
             );
         }
     }
+
+    @Post('confirm')
+    async confirmData(@Body() data: any) {
+        return await this.ocrService.confirmAndQueue(data);
+    }
 }

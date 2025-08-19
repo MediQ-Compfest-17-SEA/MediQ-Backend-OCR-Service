@@ -44,4 +44,34 @@ export class OcrService {
         );
         return response.data.exists;
     }
+
+    async confirmAndQueue(data: any): Promise<any> {
+        const userServiceUrl = process.env.USER_SERVICE_URL;
+        const queueServiceUrl = process.env.QUEUE_SERVICE_URL;
+
+        const nikExists = await this.checkNikExists(data.nik);
+
+        let userId: string;
+        if (!nikExists) {
+            const createUserResponse = await firstValueFrom(
+                this.httpService.post(`${userServiceUrl}/users`, data)
+            );
+            userId = createUserResponse.data.id;
+        } else {
+            const getUserResponse = await firstValueFrom(
+                this.httpService.get(`${userServiceUrl}/users/by-nik`, { params: { nik: data.nik } })
+            );
+            userId = getUserResponse.data.id;
+        }
+
+        const queueResponse = await firstValueFrom(
+            this.httpService.post(`${queueServiceUrl}/queue`, { userId })
+        );
+
+        return {
+            success: true,
+            message: 'Data berhasil diproses dan masuk ke antrian.',
+            queue: queueResponse.data,
+        };
+    }
 }
