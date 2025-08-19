@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
-import { OcrService } from './ocr/ocr.service';
-import { OcrController } from './ocr/ocr.controller';
+import { ConfigModule } from '@nestjs/config';
 import { OcrModule } from './ocr/ocr.module';
 
 @Module({
-  imports: [OcrModule],
-  controllers: [OcrController],
-  providers: [OcrService],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    OcrModule,
+  ],
+  controllers: [],
+  providers: [],
 })
 export class AppModule { }
