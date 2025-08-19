@@ -9,7 +9,7 @@ export class UserService {
     async checkNikExists(nik: string): Promise<boolean> {
         const userServiceUrl = process.env.USER_SERVICE_URL;
         const response = await firstValueFrom(
-            this.httpService.get(`${userServiceUrl}/users/check-nik`, { params: { nik } })
+            this.httpService.get(`${userServiceUrl}/users/by-nik/${nik}`)
         );
         return response.data.exists;
     }
@@ -25,7 +25,7 @@ export class UserService {
     async getUserByNik(nik: string): Promise<any> {
         const userServiceUrl = process.env.USER_SERVICE_URL;
         const response = await firstValueFrom(
-            this.httpService.get(`${userServiceUrl}/users/by-nik`, { params: { nik } })
+            this.httpService.get(`${userServiceUrl}/users/by-nik/${nik}`)
         );
         return response.data;
     }

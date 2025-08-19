@@ -1,6 +1,7 @@
 export class Alamat {
     constructor(
         public kel_desa: string,
+        public kecamatan: string,
         public name: string,
         public rt_rw: string,
     ) { }

@@ -1,5 +1,6 @@
 export class AlamatDto {
     kel_desa: string;
+    kecamatan: string;
     name: string;
     rt_rw: string;
 }
