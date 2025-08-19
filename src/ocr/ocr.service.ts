@@ -37,4 +37,11 @@ export class OcrService {
         }
     }
 
+    async checkNikExists(nik: string): Promise<boolean> {
+        const userServiceUrl = process.env.USER_SERVICE_URL;
+        const response = await firstValueFrom(
+            this.httpService.get(`${userServiceUrl}/users/check-nik`, { params: { nik } })
+        );
+        return response.data.exists;
+    }
 }

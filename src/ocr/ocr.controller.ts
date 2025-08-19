@@ -1,4 +1,4 @@
-import { Controller, HttpException, HttpStatus, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, HttpException, HttpStatus, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { OcrService } from './ocr.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 
