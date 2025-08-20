@@ -28,7 +28,7 @@ async function bootstrap() {
     .setDescription('API for processing Indonesian KTP (e-KTP) using OCR technology')
     .setVersion('1.0')
     .addTag('OCR', 'OCR processing endpoints')
-    .addServer(`http://localhost:${configService.get('PORT') || 3002}`, 'Development server')
+    .addServer(`http://localhost:${configService.get('PORT') || 8603}`, 'Development server')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
@@ -53,7 +53,7 @@ async function bootstrap() {
   });
 
   await app.startAllMicroservices();
-  const port = configService.get<number>('PORT') ?? 3002;
+  const port = configService.get<number>('PORT') ?? 8603;
   await app.listen(port);
 
   console.log(`OCR service is listening on port ${port}`);

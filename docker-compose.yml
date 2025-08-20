@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  ocr-service:
+    build: .
+    ports:
+      - "8603:8603"
+    environment:
+      - NODE_ENV=development
+      - PORT=8603
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - OCR_API_URL=http://ocr-engine-service:8604
+      - OCR_API_TIMEOUT=30000
+      - MAX_FILE_SIZE=5242880
+      - ALLOWED_FILE_TYPES=image/jpeg,image/png,image/jpg
+    depends_on:
+      - rabbitmq
+      - ocr-engine-service
+    networks:
+      - mediq-network
+    volumes:
+      - ocr_uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "node", "dist/health-check.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  ocr-engine-service:
+    build:
+      context: ../MediQ-Backend-OCR-Engine-Service
+    ports:
+      - "8604:8604"
+    environment:
+      - NODE_ENV=development
+      - PORT=8604
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    networks:
+      - mediq-network
+    volumes:
+      - ocr_uploads:/app/uploads
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - mediq-network
+
+volumes:
+  ocr_uploads:
+  rabbitmq_data:
+
+networks:
+  mediq-network:
+    driver: bridge
