@@ -1,29 +1,14 @@
-import { Injectable } from '@nestjs/common';
-import { ClientProxy, ClientProxyFactory, Transport, RmqOptions } from '@nestjs/microservices';
+import { Injectable, Inject } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class QueueService {
-    private client: ClientProxy;
-
-    constructor() {
-        const rabbitUrl = process.env.RABBITMQ_URL;
-        if (!rabbitUrl) {
-            throw new Error('RABBITMQ_URL is not defined');
-        }
-
-        const options: RmqOptions = {
-            transport: Transport.RMQ,
-            options: {
-                urls: [rabbitUrl],
-                queue: 'ocr_service_queue',
-                queueOptions: { durable: false },
-            },
-        };
-
-        this.client = ClientProxyFactory.create(options);
-    }
+    constructor(@Inject('QUEUE_SERVICE') private readonly queueClient: ClientProxy) { }
 
     async addToQueue(userId: string): Promise<any> {
-        return this.client.emit('add_to_queue', { userId }).toPromise();
+        return firstValueFrom(
+            this.queueClient.send('queue.add-to-queue', { userId })
+        );
     }
 }

@@ -26,7 +26,7 @@ export class OcrService {
         this.ocrApiUrl = process.env.OCR_API_URL;
     }
 
-    async processImage(file: Express.Multer.File): Promise<string> {
+    async processImage(file: Express.Multer.File): Promise<any> {
         try {
             const formData = new FormData();
             formData.append('image', file.buffer, {

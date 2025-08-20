@@ -1,32 +1,26 @@
-import { Injectable } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
+import { Injectable, Inject } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class UserService {
-    constructor(private readonly httpService: HttpService) { }
+    constructor(@Inject('USER_SERVICE') private readonly userClient: ClientProxy) { }
 
     async checkNikExists(nik: string): Promise<boolean> {
-        const userServiceUrl = process.env.USER_SERVICE_URL;
-        const response = await firstValueFrom(
-            this.httpService.get(`${userServiceUrl}/users/by-nik/${nik}`)
+        return firstValueFrom(
+            this.userClient.send('user.check-nik-exists', { nik })
         );
-        return response.data.exists;
     }
 
     async createUser(data: any): Promise<any> {
-        const userServiceUrl = process.env.USER_SERVICE_URL;
-        const response = await firstValueFrom(
-            this.httpService.post(`${userServiceUrl}/users`, data)
+        return firstValueFrom(
+            this.userClient.send('user.create', data)
         );
-        return response.data;
     }
 
     async getUserByNik(nik: string): Promise<any> {
-        const userServiceUrl = process.env.USER_SERVICE_URL;
-        const response = await firstValueFrom(
-            this.httpService.get(`${userServiceUrl}/users/by-nik/${nik}`)
+        return firstValueFrom(
+            this.userClient.send('user.get-by-nik', { nik })
         );
-        return response.data;
     }
 }
