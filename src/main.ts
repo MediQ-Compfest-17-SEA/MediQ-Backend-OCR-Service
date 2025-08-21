@@ -25,10 +25,11 @@ async function bootstrap() {
   // Swagger configuration
   const config = new DocumentBuilder()
     .setTitle('MediQ OCR Service API')
-    .setDescription('Mikroservice untuk pemrosesan OCR KTP dengan integrasi otomatis ke User Service dan Queue Service')
-    .setVersion('2.0')
-    .addTag('OCR', 'Endpoints untuk upload dan konfirmasi OCR KTP')
-    .addTag('health', 'Health check dan monitoring service')
+    .setDescription('Advanced mikroservice untuk pemrosesan OCR KTP dengan integrasi Gemini AI OCR Engine, automatic queue management, dan real-time notifications. Bridge antara user upload dan ML processing.')
+    .setVersion('3.0')
+    .addTag('OCR', 'OCR processing endpoints - Upload KTP, konfirmasi hasil, integrasi dengan Queue Service')
+    .addTag('health', 'Health check dan monitoring service - Status, dependency checks')
+    .addBearerAuth()
     .setContact(
       'MediQ Support',
       'https://mediq.craftthingy.com',
@@ -40,6 +41,7 @@ async function bootstrap() {
     )
     .addServer(`http://localhost:${configService.get('PORT') || 8603}`, 'Development Server')
     .addServer('https://mediq-ocr-service.craftthingy.com', 'Production Server')
+    .setExternalDoc('MediQ Documentation', 'https://mediq.craftthingy.com/docs')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

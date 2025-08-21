@@ -1,24 +1,35 @@
-# MediQ OCR Service
+# MediQ OCR Service v3.0
 
-Mikroservice untuk pemrosesan OCR (Optical Character Recognition) dokumen KTP dalam sistem MediQ. Service ini mengintegrasikan dengan OCR Engine Service dan otomatis mendaftarkan pengguna ke antrian setelah konfirmasi data.
+Mikroservice untuk pemrosesan OCR (Optical Character Recognition) dokumen KTP dalam sistem MediQ. Service ini mengintegrasikan dengan Gemini AI OCR Engine dan otomatis mendaftarkan pengguna ke antrian dengan real-time notifications.
 
 ## 🚀 Features
 
-- **KTP Upload & Processing** - Upload gambar KTP untuk ekstraksi data
-- **Data Verification** - Verifikasi dan edit data hasil OCR
-- **Auto User Registration** - Otomatis buat user dengan data KTP lengkap
-- **Queue Integration** - Langsung daftarkan ke antrian faskes
-- **Institution Support** - Dukung pendaftaran dengan ID institusi
-- **Microservice Communication** - Integrasi dengan User Service dan Queue Service
+- **Gemini AI OCR Integration** - Powered by Google Gemini AI for superior KTP data extraction
+- **KTP Upload & Processing** - Upload gambar KTP untuk ekstraksi data dengan akurasi tinggi
+- **Data Verification** - Verifikasi dan edit data hasil OCR dengan intelligent suggestions
+- **Auto User Registration** - Otomatis buat user dengan data KTP lengkap dan validasi NIK
+- **Enhanced Queue Management** - Advanced queue integration dengan priority handling
+- **Real-time Notifications** - Trigger notifikasi real-time untuk status updates
+- **Institution Support** - Dukung pendaftaran dengan ID institusi dan workflow validation
+- **Microservice Communication** - Integrasi dengan User Service, Queue Service, dan OCR Engine
+- **Improved Workflow** - End-to-end automation dengan error handling dan retry mechanism
 
 ## 🔌 API Endpoints
 
 ### OCR Processing
-- `POST /ocr/upload` - Upload gambar KTP untuk proses OCR
-- `POST /ocr/confirm` - Konfirmasi data OCR dan daftarkan ke antrian
+- `POST /ocr/upload` - Upload gambar KTP untuk proses OCR dengan Gemini AI
+- `POST /ocr/confirm` - Konfirmasi data OCR dan daftarkan ke antrian dengan notifikasi
+- `GET /ocr/status/:requestId` - Get status pemrosesan OCR request
+- `POST /ocr/retry/:requestId` - Retry pemrosesan OCR yang gagal
+
+### Health & Monitoring
+- `GET /health` - Health check endpoint untuk monitoring
+- `GET /metrics` - Performance metrics dan statistics
 
 ### Swagger Documentation
-Dokumentasi API tersedia di: `http://localhost:8603/api/docs`
+- **Local**: `http://localhost:8603/api/docs`
+- **Production**: `https://mediq-ocr-service.craftthingy.com/api/docs`
+- **API Version**: v3.0 with Gemini AI integration documentation
 
 ## 📝 API Usage
 
@@ -36,7 +47,8 @@ Content-Type: multipart/form-data
 ```json
 {
   "success": true,
-  "message": "KTP scanned successfully. Please verify and edit the data.",
+  "message": "KTP scanned successfully with Gemini AI. Please verify and edit the data.",
+  "requestId": "ocr-req-12345-abc",
   "data": {
     "nik": "3171012345678901",
     "nama": "JOHN DOE SMITH",
@@ -54,7 +66,10 @@ Content-Type: multipart/form-data
     "pekerjaan": "KARYAWAN SWASTA",
     "kewarganegaraan": "WNI",
     "berlaku_hingga": "SEUMUR HIDUP"
-  }
+  },
+  "confidence": 0.95,
+  "processingTime": "1.2s",
+  "aiEngine": "gemini-pro-vision"
 }
 ```
 
@@ -77,33 +92,46 @@ Content-Type: application/json
 ```json
 {
   "success": true,
-  "message": "Data berhasil diproses dan masuk ke antrian.",
+  "message": "Data berhasil diproses dan masuk ke antrian dengan notifikasi real-time.",
+  "user": {
+    "id": "user-uuid-1234",
+    "nik": "3171012345678901",
+    "name": "JOHN DOE SMITH",
+    "isNewUser": true
+  },
   "queue": {
     "id": "PQ-20240120-001",
     "userId": "user-uuid-1234",
     "institutionId": "inst-uuid-1234-5678",
     "status": "waiting",
     "queueNumber": 1,
-    "estimatedWaitTime": "15 minutes"
+    "estimatedWaitTime": "15 minutes",
+    "priority": "normal"
+  },
+  "notifications": {
+    "sent": true,
+    "channels": ["websocket", "sms"],
+    "notificationId": "notif-uuid-5678"
   }
 }
 ```
 
 ## 🔄 Data Flow
 
-### Complete OCR to Queue Flow
+### Complete OCR to Queue Flow with Gemini AI & Real-time Notifications
 ```mermaid
 sequenceDiagram
     participant Client
     participant OCR as OCR Service
-    participant Engine as OCR Engine
+    participant Engine as Gemini AI OCR Engine
     participant User as User Service  
     participant Queue as Queue Service
+    participant Notification as Notification Service
 
     Client->>OCR: POST /ocr/upload (KTP image)
-    OCR->>Engine: Forward image to ML engine
-    Engine->>OCR: Return extracted KTP data
-    OCR->>Client: Return data for verification
+    OCR->>Engine: Forward image to Gemini AI ML engine
+    Engine->>OCR: Return extracted KTP data with confidence
+    OCR->>Client: Return data for verification + requestId
 
     Client->>OCR: POST /ocr/confirm (verified data + institutionId)
     OCR->>User: Check if NIK exists
@@ -118,15 +146,18 @@ sequenceDiagram
     
     OCR->>Queue: Add user to queue with institutionId
     Queue->>OCR: Return queue information
-    OCR->>Client: Return success with queue details
+    OCR->>Notification: Trigger real-time notifications
+    Notification->>OCR: Notification sent confirmation
+    OCR->>Client: Return success with user, queue, and notification details
 ```
 
 ## 🏗️ Architecture
 
 ### Service Dependencies
-- **OCR Engine Service** (Port 8604) - ML processing untuk ekstraksi data KTP
+- **OCR Engine Service** (Port 8604) - Gemini AI ML processing untuk ekstraksi data KTP
 - **User Service** (Port 8602) - User management dan data storage
-- **Queue Service** (Port 8605) - Queue management untuk antrian faskes
+- **Queue Service** (Port 8605) - Enhanced queue management untuk antrian faskes
+- **Notification Service** - Real-time notification triggers dan delivery
 
 ### Message Patterns (RabbitMQ)
 
@@ -136,9 +167,21 @@ sequenceDiagram
 'user.check-nik-exists' -> { nik: string }
 'user.create' -> CreateUserDto (dengan KTP data lengkap)
 'user.get-by-nik' -> { nik: string }
+'user.update-profile' -> { userId: string, data: Partial<UserDto> }
 
 // To Queue Service  
-'queue.add-to-queue' -> { userId: string, institutionId?: string }
+'queue.add-to-queue' -> { userId: string, institutionId?: string, priority?: string }
+'queue.get-status' -> { queueId: string }
+'queue.update-priority' -> { queueId: string, priority: string }
+
+// To Notification Service
+'notification.trigger' -> { 
+  userId: string, 
+  type: 'queue_registered' | 'ocr_completed', 
+  data: any,
+  channels: ['websocket', 'sms', 'email']
+}
+'notification.send-bulk' -> { userIds: string[], message: string }
 ```
 
 ## 🔧 Environment Variables
@@ -147,14 +190,45 @@ sequenceDiagram
 PORT=8603
 RABBITMQ_URL="amqp://localhost:5672"
 OCR_API_URL="http://localhost:8604"
+GEMINI_API_KEY="your-gemini-api-key"
+GEMINI_MODEL="gemini-pro-vision"
+REDIS_URL="redis://localhost:6379"
+NOTIFICATION_SERVICE_URL="http://localhost:8607"
 NODE_ENV="development"
+LOG_LEVEL="info"
+MAX_FILE_SIZE="10MB"
+SUPPORTED_FORMATS="jpg,jpeg,png,pdf"
+OCR_TIMEOUT="30000"
+RETRY_ATTEMPTS=3
+CONFIDENCE_THRESHOLD=0.8
 ```
 
-## 📊 Data Mapping
+## 📊 Data Mapping & Integration
+
+### Gemini AI OCR Engine Integration
+```typescript
+// Gemini AI OCR Response Format
+interface GeminiOCRResponse {
+  nik: string;
+  nama: string;
+  tempat_lahir: string;
+  tgl_lahir: string;
+  alamat: {
+    name: string;
+    kel_desa: string;
+    kecamatan: string;
+    rt_rw: string;
+  };
+  confidence: number; // 0-1
+  processingTime: string;
+  aiEngine: 'gemini-pro-vision';
+  suggestions?: string[]; // AI suggestions for data verification
+}
+```
 
 ### OCR Engine → User Service Data Mapping
 ```typescript
-// OCR Engine format
+// Gemini OCR Engine format
 {
   nik: string,
   nama: string,
@@ -166,7 +240,8 @@ NODE_ENV="development"
     kecamatan: string,
     rt_rw: string
   },
-  // ... other fields
+  confidence: number,
+  suggestions: string[]
 }
 
 // Mapped to User Service format
@@ -179,7 +254,8 @@ NODE_ENV="development"
   alamat_kel_desa: data.alamat?.kel_desa,
   alamat_kecamatan: data.alamat?.kecamatan,
   alamat_rt_rw: data.alamat?.rt_rw,
-  // ... other mapped fields
+  ocr_confidence: data.confidence,
+  data_source: 'gemini-ai-ocr'
 }
 ```
 
@@ -251,26 +327,45 @@ curl -X POST \
 ### Institution Service
 - Mendukung pendaftaran dengan institution ID
 - Validasi institution exists sebelum queue registration
+- Workflow validation untuk enhanced processing
+
+### Real-time Notification Integration
+- WebSocket connections untuk instant updates
+- SMS/Email notifications via external providers
+- Multi-channel notification delivery
+- Notification status tracking dan retry logic
 
 ## 🏥 Use Cases
 
-### 1. Walk-in Patient Registration
+### 1. Walk-in Patient Registration with Gemini AI
 1. Pasien datang ke faskes
-2. Operator scan KTP pasien
-3. Sistem ekstrak data KTP
-4. Operator verifikasi data
-5. Pasien otomatis masuk antrian
+2. Operator scan KTP pasien dengan improved accuracy
+3. Gemini AI ekstrak data KTP dengan confidence scoring
+4. Operator verifikasi data dengan AI suggestions
+5. Pasien otomatis masuk antrian dengan real-time notification
+6. WebSocket notification ke mobile app pasien
 
-### 2. Online Pre-registration
+### 2. Online Pre-registration with Enhanced Workflow
 1. Pasien upload KTP via mobile app
-2. Sistem proses OCR di background
-3. Pasien verifikasi data via app
-4. Pilih faskes untuk pendaftaran
-5. Masuk antrian online
+2. Gemini AI proses OCR di background dengan retry logic
+3. Pasien verifikasi data via app dengan intelligent suggestions
+4. Pilih faskes untuk pendaftaran dengan availability check
+5. Masuk antrian online dengan priority handling
+6. Multi-channel notifications (SMS, email, push) untuk status updates
+
+### 3. Bulk Registration Processing
+1. Healthcare facility uploads multiple KTP images
+2. Batch processing dengan Gemini AI untuk mass OCR
+3. Automated user creation dengan duplicate detection
+4. Bulk queue registration dengan priority assignment
+5. Real-time progress tracking dan bulk notifications
 
 ---
 
+**Version:** 3.0  
 **Port:** 8603  
 **Public URL:** https://mediq-ocr-service.craftthingy.com  
 **Queue:** ocr_service_queue  
-**Dependencies:** OCR Engine (8604), User Service (8602), Queue Service (8605)
+**Dependencies:** Gemini AI OCR Engine (8604), User Service (8602), Enhanced Queue Service (8605), Notification Service (8607)  
+**AI Engine:** Google Gemini Pro Vision  
+**Real-time Features:** WebSocket notifications, Multi-channel messaging, Priority queue management
