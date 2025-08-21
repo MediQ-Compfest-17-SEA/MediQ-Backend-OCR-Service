@@ -6,9 +6,9 @@ import { firstValueFrom } from 'rxjs';
 export class QueueService {
     constructor(@Inject('QUEUE_SERVICE') private readonly queueClient: ClientProxy) { }
 
-    async addToQueue(userId: string): Promise<any> {
+    async addToQueue(queueData: { userId: string; institutionId?: string | null }): Promise<any> {
         return firstValueFrom(
-            this.queueClient.send('queue.add-to-queue', { userId })
+            this.queueClient.send('queue.add-to-queue', queueData)
         );
     }
 }

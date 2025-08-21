@@ -1,96 +1,35 @@
-# MediQ Backend - OCR Service
+# MediQ OCR Service
 
-## 📷 Deskripsi
+Mikroservice untuk pemrosesan OCR (Optical Character Recognition) dokumen KTP dalam sistem MediQ. Service ini mengintegrasikan dengan OCR Engine Service dan otomatis mendaftarkan pengguna ke antrian setelah konfirmasi data.
 
-Layanan **OCR Service** adalah komponen penting dalam sistem MediQ yang melakukan **pemrosesan KTP (e-KTP) otomatis** menggunakan teknologi Optical Character Recognition (OCR) dan Machine Learning. Service ini mengubah gambar KTP menjadi data terstruktur untuk pendaftaran pasien otomatis.
+## 🚀 Features
 
-## ✨ Fitur Utama
+- **KTP Upload & Processing** - Upload gambar KTP untuk ekstraksi data
+- **Data Verification** - Verifikasi dan edit data hasil OCR
+- **Auto User Registration** - Otomatis buat user dengan data KTP lengkap
+- **Queue Integration** - Langsung daftarkan ke antrian faskes
+- **Institution Support** - Dukung pendaftaran dengan ID institusi
+- **Microservice Communication** - Integrasi dengan User Service dan Queue Service
 
-### 🔍 Pemrosesan KTP Otomatis
-- **Image Upload**: Upload gambar KTP dalam format JPG, PNG, WebP
-- **OCR Processing**: Ekstraksi data menggunakan external OCR engine
-- **Data Validation**: Validasi dan strukturisasi data KTP
-- **Auto Registration**: Integrasi dengan User Service untuk pendaftaran otomatis
+## 🔌 API Endpoints
 
-### 🤖 Machine Learning Integration
-- **YOLO Detection**: Deteksi area teks pada KTP
-- **Text Recognition**: Ekstraksi teks dengan akurasi tinggi
-- **Data Parsing**: Parsing data sesuai format KTP Indonesia
-- **Quality Assurance**: Validasi kualitas hasil OCR
-
-### 🔄 Microservices Integration
-- **RabbitMQ Communication**: Komunikasi dengan User Service dan Queue Service
-- **Hybrid Architecture**: External access via API Gateway, internal direct communication
-- **Real-time Processing**: Pemrosesan KTP real-time dengan response cepat
-
-## 🚀 Quick Start
-
-### Persyaratan
-- **Node.js** 18+
-- **External OCR Engine** (Python service pada port 8604)
-- **RabbitMQ** 3.9+
-- **File Storage** untuk temporary image processing
-
-### Instalasi
-
-```bash
-# Clone repository
-git clone https://github.com/MediQ-Compfest-17-SEA/MediQ-Backend-OCR-Service.git
-cd MediQ-Backend-OCR-Service
-
-# Install dependencies
-npm install
-
-# Setup environment variables
-cp .env.example .env
-# Edit .env sesuai konfigurasi environment Anda
-
-# Start development server
-npm run start:dev
-```
-
-### Environment Variables
-
-```env
-# Server Configuration
-PORT=8603
-NODE_ENV=development
-
-# External OCR Engine
-OCR_API_URL=http://localhost:8604/scan-ocr
-OCR_API_KEY=your-ocr-api-key
-
-# RabbitMQ
-RABBITMQ_URL=amqp://localhost:5672
-
-# File Upload
-UPLOAD_LIMIT=10mb
-ALLOWED_FILE_TYPES=image/jpeg,image/png,image/webp
-
-# Logging
-LOG_LEVEL=info
-```
-
-## 📋 API Endpoints
-
-### Base URL
-**Development**: `http://localhost:8603`  
-**Production**: `https://api.mediq.com/ocr`
+### OCR Processing
+- `POST /ocr/upload` - Upload gambar KTP untuk proses OCR
+- `POST /ocr/confirm` - Konfirmasi data OCR dan daftarkan ke antrian
 
 ### Swagger Documentation
-**Interactive API Docs**: `http://localhost:8603/api/docs`
+Dokumentasi API tersedia di: `http://localhost:8603/api/docs`
 
-### Core Endpoints
+## 📝 API Usage
 
-#### 📷 KTP Processing
-
-**Upload dan Proses KTP**
+### 1. Upload KTP Image
 ```http
 POST /ocr/upload
 Content-Type: multipart/form-data
 
-Form Data:
-- file: [KTP image file - JPG/PNG/WebP, max 10MB]
+{
+  "file": KTP_IMAGE_FILE
+}
 ```
 
 **Response:**
@@ -102,397 +41,236 @@ Form Data:
     "nik": "3171012345678901",
     "nama": "JOHN DOE SMITH",
     "tempat_lahir": "JAKARTA",
-    "tgl_lahir": "01-01-1990",
+    "tgl_lahir": "15-08-1990",
     "jenis_kelamin": "LAKI-LAKI",
     "alamat": {
-      "kel_desa": "MENTENG",
-      "kecamatan": "MENTENG", 
-      "name": "JL. SUDIRMAN NO. 123 RT 001 RW 002",
+      "name": "JL. MENTENG RAYA NO. 123",
+      "kel_desa": "KELURAHAN MENTENG",
+      "kecamatan": "MENTENG",
       "rt_rw": "001/002"
     },
     "agama": "ISLAM",
     "status_perkawinan": "BELUM KAWIN",
-    "pekerjaan": "PELAJAR/MAHASISWA",
+    "pekerjaan": "KARYAWAN SWASTA",
     "kewarganegaraan": "WNI",
     "berlaku_hingga": "SEUMUR HIDUP"
   }
 }
 ```
 
-**Konfirmasi Data dan Masuk Antrian**
+### 2. Confirm OCR Data & Queue Registration
 ```http
 POST /ocr/confirm
 Content-Type: application/json
 
 {
-  "nik": "3171012345678901",
-  "nama": "John Doe Smith",
-  "tempat_lahir": "Jakarta",
-  "tgl_lahir": "1990-01-01",
-  "jenis_kelamin": "Laki-laki",
-  "alamat": "Jl. Sudirman No. 123 RT 001 RW 002, Menteng",
-  "agama": "Islam",
-  "status_perkawinan": "Belum Kawin",
-  "pekerjaan": "Software Engineer",
-  "kewarganegaraan": "WNI",
-  "berlaku_hingga": "2025-01-01",
-  "priority": "NORMAL"
+  "data": {
+    "nik": "3171012345678901",
+    "nama": "JOHN DOE SMITH",
+    // ... verified KTP data
+  },
+  "institutionId": "inst-uuid-1234-5678" // Optional
 }
 ```
 
-#### 🔍 Health Check
-
-**Service Health**
-```http
-GET /health
-```
-
-## 🧪 Testing
-
-### Unit Testing
-```bash
-# Run all tests with coverage
-npm run test:cov
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run specific test file
-npm run test ocr.service.spec.ts
-
-# Test dengan file upload
-npm run test:e2e
-```
-
-### Integration Testing
-```bash
-# Test RabbitMQ communication
-npm run test:integration
-
-# Test external OCR API integration
-npm run test:ocr-integration
-```
-
-### Coverage Requirements
-- **Statements**: 100%
-- **Branches**: 100%
-- **Functions**: 100%
-- **Lines**: 100%
-
-### Testing dengan Sample Files
-```bash
-# Upload test KTP image
-curl -X POST http://localhost:8603/ocr/upload \
-  -F "file=@test/fixtures/sample-ktp.jpg" \
-  -H "Content-Type: multipart/form-data"
-```
-
-## 🏗️ Arsitektur
-
-### Service Flow
-```
-1. Client Upload KTP → OCR Service (Port 8603)
-2. OCR Service → External OCR Engine (Port 8604)  
-3. OCR Engine Response → Data Strukturisasi
-4. User Verification → Data Confirmation
-5. OCR Service → User Service (via RabbitMQ) → Create/Check User
-6. OCR Service → Queue Service (via RabbitMQ) → Add to Queue
-```
-
-### Message Patterns (RabbitMQ)
-```typescript
-// Outgoing messages ke services lain
-'user.check-nik-exists': { nik: string }
-'user.create': CreateUserDto  
-'user.get-by-nik': { nik: string }
-'queue.add-to-queue': CreatePatientQueueDto
-
-// Incoming messages (jika ada)
-'ocr.process-image': { imageBuffer: Buffer, metadata: any }
-'ocr.reprocess': { ocrId: string }
-```
-
-### File Processing Pipeline
-```typescript
-// 1. File Validation
-- Format check (JPG, PNG, WebP)
-- Size validation (max 10MB)
-- Image dimension check
-
-// 2. OCR Processing  
-- Send to external OCR engine
-- Parse OCR response
-- Data cleaning dan normalization
-
-// 3. User Management
-- Check if NIK already exists
-- Create new user jika belum ada
-- Get existing user data
-
-// 4. Queue Integration
-- Add user to patient queue
-- Set appropriate priority
-- Return queue information
-```
-
-## 📦 Production Deployment
-
-### Docker
-```bash
-# Build production image
-docker build -t mediq/ocr-service:latest .
-
-# Run container
-docker run -p 8603:8603 \
-  -e OCR_API_URL="http://ocr-engine:8604/scan-ocr" \
-  -e RABBITMQ_URL="amqp://rabbitmq:5672" \
-  -v /tmp/uploads:/app/uploads \
-  mediq/ocr-service:latest
-```
-
-### Kubernetes
-```bash
-# Deploy to cluster
-kubectl apply -f k8s/
-
-# Check deployment status
-kubectl get pods -l app=ocr-service
-
-# View logs
-kubectl logs -f deployment/ocr-service
-
-# Scale replicas
-kubectl scale deployment ocr-service --replicas=3
-```
-
-### External Dependencies
-- **OCR Engine Service**: Python service untuk actual OCR processing
-- **File Storage**: Temporary storage untuk image processing
-- **RabbitMQ**: Message broker untuk service communication
-
-## 🔧 Development
-
-### Project Structure
-```
-src/
-├── ocr/
-│   ├── dto/                    # Data Transfer Objects
-│   ├── domain/                 # Domain entities
-│   ├── infrastructure/         # External service integration
-│   ├── ocr.controller.ts       # HTTP endpoints
-│   ├── ocr.service.ts         # Business logic
-│   └── ocr.module.ts          # Module configuration
-├── app.module.ts              # Main application module  
-└── main.ts                    # Application bootstrap
-```
-
-### External OCR Engine Integration
-```typescript
-// OCR Engine API Call
-async processImage(file: Express.Multer.File): Promise<OcrDataDto> {
-  const formData = new FormData();
-  formData.append('image', file.buffer, {
-    filename: file.originalname,
-    contentType: file.mimetype,
-  });
-
-  const response = await this.httpService.post(
-    this.ocrApiUrl, 
-    formData,
-    { headers: formData.getHeaders() }
-  );
-
-  return this.parseOcrResponse(response.data);
-}
-```
-
-### Error Handling
-```typescript
-// Comprehensive error handling
-try {
-  const result = await this.ocrService.processImage(file);
-  return { success: true, data: result };
-} catch (error) {
-  if (error.code === 'INVALID_FILE_FORMAT') {
-    throw new BadRequestException('Format file tidak didukung');
-  } else if (error.code === 'OCR_ENGINE_UNAVAILABLE') {
-    throw new ServiceUnavailableException('OCR engine sedang tidak tersedia');
-  } else {
-    throw new InternalServerErrorException('Gagal memproses KTP');
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Data berhasil diproses dan masuk ke antrian.",
+  "queue": {
+    "id": "PQ-20240120-001",
+    "userId": "user-uuid-1234",
+    "institutionId": "inst-uuid-1234-5678",
+    "status": "waiting",
+    "queueNumber": 1,
+    "estimatedWaitTime": "15 minutes"
   }
 }
 ```
 
-## 🚨 Monitoring & Troubleshooting
+## 🔄 Data Flow
 
-### Health Checks
-```bash
-# Service health
-curl http://localhost:8603/health
+### Complete OCR to Queue Flow
+```mermaid
+sequenceDiagram
+    participant Client
+    participant OCR as OCR Service
+    participant Engine as OCR Engine
+    participant User as User Service  
+    participant Queue as Queue Service
 
-# OCR Engine connectivity
-curl http://localhost:8604/health
+    Client->>OCR: POST /ocr/upload (KTP image)
+    OCR->>Engine: Forward image to ML engine
+    Engine->>OCR: Return extracted KTP data
+    OCR->>Client: Return data for verification
 
-# RabbitMQ connection
-curl http://localhost:8603/ocr/status
+    Client->>OCR: POST /ocr/confirm (verified data + institutionId)
+    OCR->>User: Check if NIK exists
+    
+    alt NIK not exists
+        OCR->>User: Create new user with KTP data
+        User->>OCR: Return user ID
+    else NIK exists
+        OCR->>User: Get existing user by NIK
+        User->>OCR: Return user data
+    end
+    
+    OCR->>Queue: Add user to queue with institutionId
+    Queue->>OCR: Return queue information
+    OCR->>Client: Return success with queue details
 ```
 
-### Common Issues
+## 🏗️ Architecture
 
-**File Upload Error**:
-```bash
-# Check file size limit
-MAX_FILE_SIZE=10MB
+### Service Dependencies
+- **OCR Engine Service** (Port 8604) - ML processing untuk ekstraksi data KTP
+- **User Service** (Port 8602) - User management dan data storage
+- **Queue Service** (Port 8605) - Queue management untuk antrian faskes
 
-# Supported formats
-SUPPORTED_FORMATS="image/jpeg,image/png,image/webp"
+### Message Patterns (RabbitMQ)
 
-# Check disk space
-df -h /tmp
-```
-
-**OCR Engine Connection Error**:
-```bash
-# Test OCR engine
-curl -X POST http://localhost:8604/scan-ocr \
-  -F "image=@sample-ktp.jpg"
-
-# Check OCR engine logs
-docker logs ocr-engine-container
-
-# Verify OCR_API_URL configuration
-echo $OCR_API_URL
-```
-
-**RabbitMQ Communication Error**:
-```bash
-# Check RabbitMQ queues
-rabbitmqctl list_queues
-
-# Test User Service connectivity
-curl http://localhost:8602/health
-
-# Check queue messages
-rabbitmqctl list_queues name messages
-```
-
-### Performance Monitoring
+#### Outgoing Messages
 ```typescript
-// OCR processing time tracking
-const startTime = Date.now();
-const result = await this.processImage(file);
-const processingTime = Date.now() - startTime;
+// To User Service
+'user.check-nik-exists' -> { nik: string }
+'user.create' -> CreateUserDto (dengan KTP data lengkap)
+'user.get-by-nik' -> { nik: string }
 
-logger.info('OCR processing completed', {
-  fileName: file.originalname,
-  fileSize: file.size,
-  processingTime: `${processingTime}ms`,
-  success: true
-});
+// To Queue Service  
+'queue.add-to-queue' -> { userId: string, institutionId?: string }
 ```
 
-### Logging Strategy
+## 🔧 Environment Variables
+
+```env
+PORT=8603
+RABBITMQ_URL="amqp://localhost:5672"
+OCR_API_URL="http://localhost:8604"
+NODE_ENV="development"
+```
+
+## 📊 Data Mapping
+
+### OCR Engine → User Service Data Mapping
 ```typescript
-// Structured logging dengan correlation IDs
-logger.info('KTP processing started', {
-  correlationId: req.headers['x-correlation-id'],
-  fileName: file.originalname,
-  fileSize: file.size,
-  clientIP: req.ip
-});
+// OCR Engine format
+{
+  nik: string,
+  nama: string,
+  tempat_lahir: string,
+  tgl_lahir: string,
+  alamat: {
+    name: string,
+    kel_desa: string,
+    kecamatan: string,
+    rt_rw: string
+  },
+  // ... other fields
+}
+
+// Mapped to User Service format
+{
+  nik: data.nik,
+  name: data.nama,
+  tempat_lahir: data.tempat_lahir,
+  tgl_lahir: data.tgl_lahir,
+  alamat_jalan: data.alamat?.name,
+  alamat_kel_desa: data.alamat?.kel_desa,
+  alamat_kecamatan: data.alamat?.kecamatan,
+  alamat_rt_rw: data.alamat?.rt_rw,
+  // ... other mapped fields
+}
 ```
 
-## 🔒 Security Considerations
+## 🏃‍♂️ Development
 
-### File Upload Security
-- **File Type Validation**: Hanya image files yang diizinkan
-- **File Size Limits**: Maximum 10MB per upload
-- **Virus Scanning**: Integration dengan antivirus scanner (production)
-- **Temporary Storage**: Auto-cleanup uploaded files setelah processing
+```bash
+# Install dependencies
+npm install
 
-### Data Privacy
-- **KTP Data**: Sensitive personal information handling
-- **Data Retention**: Automatic deletion setelah processing
-- **Audit Trail**: Log semua OCR operations untuk compliance
-- **GDPR Compliance**: Data protection dan user consent
+# Start development server
+npm run start:dev
 
-### API Security
-- **Rate Limiting**: Prevent abuse dengan rate limiting
-- **Input Validation**: Comprehensive validation untuk semua inputs  
-- **Error Information**: Tidak expose sensitive system information
-- **Authentication**: Integration dengan API Gateway untuk auth
+# Build for production
+npm run build
 
-## 🎭 Use Cases
+# Run tests
+npm run test
+npm run test:e2e
 
-### Scenario 1: Pendaftaran Pasien Baru
-1. **Pasien scan KTP** di kiosk atau mobile app
-2. **OCR Service** process gambar KTP
-3. **Data verification** oleh pasien atau operator
-4. **Konfirmasi data** → create user + add to queue
-5. **Nomor antrian** ditampilkan ke pasien
+# Run linting
+npm run lint
+```
 
-### Scenario 2: Pasien Existing  
-1. **Pasien scan KTP** yang sudah terdaftar
-2. **OCR Service** detect existing NIK
-3. **Auto-login** atau **queue addition** langsung
-4. **Update antrian** dengan data terbaru
+## 🧪 Testing
 
-### Scenario 3: Batch Processing
-1. **Multiple KTP upload** untuk pendaftaran massal
-2. **Parallel OCR processing** untuk efficiency
-3. **Batch user creation** dan queue management
-4. **Report generation** untuk administration
+### Manual Testing with curl
+```bash
+# Upload KTP image
+curl -X POST \
+  http://localhost:8603/ocr/upload \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@path/to/ktp-image.jpg"
 
-## 🤝 Contributing
+# Confirm OCR data
+curl -X POST \
+  http://localhost:8603/ocr/confirm \
+  -H "Content-Type: application/json" \
+  -d '{
+    "data": {
+      "nik": "3171012345678901",
+      "nama": "JOHN DOE SMITH",
+      "tempat_lahir": "JAKARTA"
+    },
+    "institutionId": "inst-123"
+  }'
+```
 
-1. **Fork** repository
-2. **Create branch** (`git checkout -b feature/ocr-enhancement`)
-3. **Add tests** dengan 100% coverage
-4. **Update documentation** jika diperlukan
-5. **Commit changes** (`git commit -m 'Enhance OCR accuracy'`)
-6. **Push branch** (`git push origin feature/ocr-enhancement`)
-7. **Create Pull Request**
+## 🛡️ Security & Validation
 
-### Development Guidelines
-- **TDD Approach**: Write tests first, then implementation
-- **Error Handling**: Comprehensive error scenarios
-- **Performance**: Monitor OCR processing time
-- **Security**: Handle sensitive KTP data properly
-- **Documentation**: Update API docs untuk new features
+- **File Upload Validation** - Validasi tipe dan ukuran file gambar
+- **Data Validation** - Class-validator untuk OCR data
+- **NIK Validation** - Format dan uniqueness check
+- **Error Handling** - Comprehensive error handling dengan proper HTTP status codes
 
-## 📄 License
+## 📈 Monitoring
 
-**Dual License**: Apache-2.0 + Commercial License (Royalty)
+- Health check endpoint untuk monitoring
+- Logging untuk debugging dan audit trail
+- Error tracking dan performance monitoring
+- RabbitMQ connection monitoring
 
-**Copyright (c) 2025 Alif Nurhidayat (KillerKing93)**
+## 🔄 Integration dengan Services Lain
 
-### **Open Source License**
-Licensed under the Apache License, Version 2.0 (the "License");  
-you may not use this file except in compliance with the License.  
-You may obtain a copy of the License at: http://www.apache.org/licenses/LICENSE-2.0
+### API Gateway
+- Semua endpoints exposed melalui API Gateway
+- Authentication dan authorization handling
+- Rate limiting dan circuit breaker
 
-### **Commercial License**  
-For commercial use, proprietary modifications, or usage in closed-source projects,  
-a commercial license is required.  
-**Contact**: alifnurhidayatwork@gmail.com
+### Institution Service
+- Mendukung pendaftaran dengan institution ID
+- Validasi institution exists sebelum queue registration
 
-Unless required by applicable law or agreed to in writing, software  
-distributed under the License is distributed on an "AS IS" BASIS,  
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
-See the License for the specific language governing permissions and  
-limitations under the License.
+## 🏥 Use Cases
+
+### 1. Walk-in Patient Registration
+1. Pasien datang ke faskes
+2. Operator scan KTP pasien
+3. Sistem ekstrak data KTP
+4. Operator verifikasi data
+5. Pasien otomatis masuk antrian
+
+### 2. Online Pre-registration
+1. Pasien upload KTP via mobile app
+2. Sistem proses OCR di background
+3. Pasien verifikasi data via app
+4. Pilih faskes untuk pendaftaran
+5. Masuk antrian online
 
 ---
 
-**💡 Tips Pengembangan**:
-- Test dengan berbagai kualitas gambar KTP untuk improve accuracy
-- Monitor external OCR engine performance dan implement fallback
-- Gunakan correlation IDs untuk debugging cross-service communication
-- Implement caching untuk frequently processed KTP images
-- Consider batch processing untuk high-volume scenarios
-
-**🔗 Related Services**:
-- **User Service**: Target untuk user creation/lookup
-- **Patient Queue Service**: Target untuk queue management  
-- **OCR Engine Service**: External engine untuk actual OCR processing
-- **API Gateway**: Entry point untuk external client access
+**Port:** 8603  
+**Public URL:** https://mediq-ocr-service.craftthingy.com  
+**Queue:** ocr_service_queue  
+**Dependencies:** OCR Engine (8604), User Service (8602), Queue Service (8605)

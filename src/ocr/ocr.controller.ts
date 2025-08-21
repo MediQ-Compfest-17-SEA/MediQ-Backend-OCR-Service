@@ -23,6 +23,7 @@ import {
   OcrUploadResponseDto,
   OcrConfirmResponseDto,
 } from './dto/ocr-data.dto';
+import { ConfirmQueueDto } from './dto/confirm-queue.dto';
 
 @ApiTags('OCR')
 @Controller('ocr')
@@ -102,13 +103,13 @@ export class OcrController {
 
   @Post('confirm')
   @ApiOperation({
-    summary: 'Confirm OCR data and add to patient queue',
+    summary: 'Confirm OCR data and add to patient queue with institution support',
     description:
-      'Confirm the extracted and optionally edited KTP data, then add the patient to the medical queue system. This endpoint validates the data and creates a queue entry.',
+      'Konfirmasi data KTP hasil OCR dan otomatis daftarkan ke antrian. Endpoint ini akan membuat user baru (jika NIK belum ada) dengan data KTP lengkap, kemudian mendaftarkan ke antrian dengan support institution ID.',
   })
   @ApiBody({
-    description: 'Confirmed KTP data to be added to patient queue',
-    type: OcrDataDto,
+    description: 'Data KTP yang telah dikonfirmasi dengan optional institution ID',
+    type: ConfirmQueueDto,
   })
   @ApiResponse({
     status: 200,
@@ -144,7 +145,7 @@ export class OcrController {
       },
     },
   })
-  async confirmData(@Body() data: OcrDataDto): Promise<OcrConfirmResponseDto> {
-    return await this.ocrService.confirmAndQueue(data);
+  async confirmData(@Body() payload: ConfirmQueueDto): Promise<OcrConfirmResponseDto> {
+    return await this.ocrService.confirmAndQueue(payload.data, payload.institutionId);
   }
 }

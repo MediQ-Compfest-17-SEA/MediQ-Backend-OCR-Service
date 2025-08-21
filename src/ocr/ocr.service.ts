@@ -9,21 +9,13 @@ import { QueueService } from './infrastructure/queue.service';
 export class OcrService {
 
     private readonly ocrApiUrl: string;
-    private readonly userService: UserService;
-    private readonly queueService: QueueService;
 
     constructor(
         private readonly httpService: HttpService,
-        userService: UserService,
-        queueService: QueueService,
+        private readonly userService: UserService,
+        private readonly queueService: QueueService,
     ) {
-        this.userService = userService;
-        this.queueService = queueService;
-
-        if (!process.env.OCR_API_URL) {
-            throw new Error('OCR_API_URL environment variable is not set');
-        }
-        this.ocrApiUrl = process.env.OCR_API_URL;
+        this.ocrApiUrl = process.env.OCR_API_URL || 'http://localhost:8604';
     }
 
     async processImage(file: Express.Multer.File): Promise<any> {
@@ -48,19 +40,40 @@ export class OcrService {
         }
     }
 
-    async confirmAndQueue(data: any): Promise<any> {
+    async confirmAndQueue(data: any, institutionId?: string): Promise<any> {
         const nikExists = await this.userService.checkNikExists(data.nik);
 
         let userId: string;
         if (!nikExists) {
-            const user = await this.userService.createUser(data);
+            // Map OCR data to User Service format
+            const userData = {
+                nik: data.nik,
+                name: data.nama,
+                tempat_lahir: data.tempat_lahir,
+                tgl_lahir: data.tgl_lahir,
+                jenis_kelamin: data.jenis_kelamin,
+                alamat_jalan: data.alamat?.name,
+                alamat_kel_desa: data.alamat?.kel_desa,
+                alamat_kecamatan: data.alamat?.kecamatan,
+                alamat_rt_rw: data.alamat?.rt_rw,
+                agama: data.agama,
+                status_perkawinan: data.status_perkawinan,
+                pekerjaan: data.pekerjaan,
+                kewarganegaraan: data.kewarganegaraan,
+                berlaku_hingga: data.berlaku_hingga,
+            };
+            const user = await this.userService.createUser(userData);
             userId = user.id;
         } else {
             const user = await this.userService.getUserByNik(data.nik);
             userId = user.id;
         }
 
-        const queue = await this.queueService.addToQueue(userId);
+        const queueData = {
+            userId,
+            institutionId: institutionId || null,
+        };
+        const queue = await this.queueService.addToQueue(queueData);
 
         return {
             success: true,

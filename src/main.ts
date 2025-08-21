@@ -25,10 +25,21 @@ async function bootstrap() {
   // Swagger configuration
   const config = new DocumentBuilder()
     .setTitle('MediQ OCR Service API')
-    .setDescription('API for processing Indonesian KTP (e-KTP) using OCR technology')
-    .setVersion('1.0')
-    .addTag('OCR', 'OCR processing endpoints')
-    .addServer(`http://localhost:${configService.get('PORT') || 8603}`, 'Development server')
+    .setDescription('Mikroservice untuk pemrosesan OCR KTP dengan integrasi otomatis ke User Service dan Queue Service')
+    .setVersion('2.0')
+    .addTag('OCR', 'Endpoints untuk upload dan konfirmasi OCR KTP')
+    .addTag('health', 'Health check dan monitoring service')
+    .setContact(
+      'MediQ Support',
+      'https://mediq.craftthingy.com',
+      'support@mediq.com'
+    )
+    .setLicense(
+      'MIT',
+      'https://opensource.org/licenses/MIT'
+    )
+    .addServer(`http://localhost:${configService.get('PORT') || 8603}`, 'Development Server')
+    .addServer('https://mediq-ocr-service.craftthingy.com', 'Production Server')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
