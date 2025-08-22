@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, ValidateNested } from 'class-validator';
+import { IsString, IsNotEmpty, ValidateNested, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class AlamatDto {
@@ -145,10 +145,11 @@ export class OcrUploadResponseDto {
   message: string;
 
   @ApiProperty({
-    description: 'Data hasil OCR KTP',
-    type: OcrDataDto,
+    description: 'Temporary OCR data payload with tempId',
+    // avoid forward-ref in metadata; declare as object schema here for swagger
+    type: Object,
   })
-  data: OcrDataDto;
+  data: any;
 }
 
 export class OcrConfirmResponseDto {
@@ -169,4 +170,76 @@ export class OcrConfirmResponseDto {
     example: 'PQ-20240120-001',
   })
   queueId: string;
+}
+
+export class OcrTempDataDto {
+  @ApiProperty({ description: 'Temporary ID for OCR session', example: 'TMP-MB4ZK4-1A2B3C' })
+  tempId: string;
+
+  @ApiProperty({ description: 'Current temporary OCR data', type: OcrDataDto })
+  data?: OcrDataDto;
+}
+
+export class OcrConfirmTempResponseDto extends OcrConfirmResponseDto {
+  @ApiProperty({ description: 'Temporary tempId deleted after confirm', example: 'TMP-MB4ZK4-1A2B3C' })
+  tempIdDeleted: string;
+}
+
+export class UserDataDto {
+  @ApiProperty({ description: 'Email pengguna', example: 'user@example.com', required: false })
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @ApiProperty({ description: 'Nomor handphone', example: '+6281234567890', required: false })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiProperty({ description: 'Username', example: 'john.doe', required: false })
+  @IsOptional()
+  @IsString()
+  username?: string;
+}
+
+export class InstitutionDataDto {
+  @ApiProperty({ description: 'ID Institusi', example: 'INST-123', required: false })
+  @IsOptional()
+  @IsString()
+  institutionId?: string;
+
+  @ApiProperty({ description: 'Nama Institusi', example: 'RS Harapan Bunda', required: false })
+  @IsOptional()
+  @IsString()
+  institutionName?: string;
+
+  @ApiProperty({ description: 'Departemen/Poli', example: 'Poli Umum', required: false })
+  @IsOptional()
+  @IsString()
+  departmentName?: string;
+
+  @ApiProperty({ description: 'Jenis layanan', example: 'konsultasi', required: false })
+  @IsOptional()
+  @IsString()
+  serviceType?: string;
+}
+
+export class TempPatchDto {
+  @ApiProperty({ description: 'Patch data KTP hasil OCR', required: false, type: OcrDataDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => OcrDataDto)
+  ktp?: OcrDataDto;
+
+  @ApiProperty({ description: 'Data user untuk registrasi', required: false, type: UserDataDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UserDataDto)
+  user?: UserDataDto;
+
+  @ApiProperty({ description: 'Data institusi untuk queue', required: false, type: InstitutionDataDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => InstitutionDataDto)
+  institution?: InstitutionDataDto;
 }

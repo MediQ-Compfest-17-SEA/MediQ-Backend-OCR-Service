@@ -1,40 +1,28 @@
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { join } from 'path';
 import { OcrController } from './ocr.controller';
+import { OcrGrpcController } from './ocr.grpc.controller';
 import { OcrService } from './ocr.service';
-import { UserService } from './infrastructure/user.service';
-import { QueueService } from './infrastructure/queue.service';
 
 @Module({
     imports: [
         HttpModule,
+        // gRPC client for Queue Service (internal)
         ClientsModule.register([
             {
-                name: 'USER_SERVICE',
-                transport: Transport.RMQ,
+                name: 'QUEUE_GRPC',
+                transport: Transport.GRPC,
                 options: {
-                    urls: [process.env.RABBITMQ_URL || 'amqp://localhost:5672'],
-                    queue: 'user_service_queue',
-                    queueOptions: {
-                        durable: true,
-                    },
-                },
-            },
-            {
-                name: 'QUEUE_SERVICE',
-                transport: Transport.RMQ,
-                options: {
-                    urls: [process.env.RABBITMQ_URL || 'amqp://localhost:5672'],
-                    queue: 'queue_service_queue',
-                    queueOptions: {
-                        durable: true,
-                    },
+                    package: 'queue.v1',
+                    protoPath: join(__dirname, '../../shared/proto/queue.proto'),
+                    url: process.env.QUEUE_GRPC_URL || 'localhost:51055',
                 },
             },
         ]),
     ],
-    controllers: [OcrController],
-    providers: [OcrService, UserService, QueueService],
+    controllers: [OcrController, OcrGrpcController],
+    providers: [OcrService],
 })
 export class OcrModule { }

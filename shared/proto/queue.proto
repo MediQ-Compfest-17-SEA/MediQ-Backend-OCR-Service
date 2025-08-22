@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package queue.v1;
+
+// Patient Queue internal gRPC service
+service QueueService {
+  // Add a new patient to the queue
+  rpc AddToQueue (AddToQueueRequest) returns (AddToQueueResponse);
+}
+
+// Request carries basic KTP-derived fields.
+// institutionId is optional; when provided, queue entry should be scoped to that institution.
+message AddToQueueRequest {
+  string nik = 1;
+  string nama = 2;
+  string tempat_lahir = 3;
+  string tgl_lahir = 4;
+  string jenis_kelamin = 5;
+  string alamat = 6;
+  string agama = 7;
+  string priority = 8;
+  string keterangan = 9;
+  string institutionId = 10;
+}
+
+message AddToQueueResponse {
+  bool success = 1;
+  string message = 2;
+  // JSON string representing created queue DTO or state
+  string dataJson = 3;
+  string error = 4;
+}

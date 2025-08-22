@@ -4,6 +4,7 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
+import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -51,17 +52,13 @@ async function bootstrap() {
     },
   });
 
-  const rabbitUrl = configService.get<string>('RABBITMQ_URL');
-  if (!rabbitUrl) {
-    throw new Error('RABBITMQ_URL is not defined in configuration');
-  }
-
+  // gRPC microservice (internal)
   app.connectMicroservice<MicroserviceOptions>({
-    transport: Transport.RMQ,
+    transport: Transport.GRPC,
     options: {
-      urls: [rabbitUrl],
-      queue: 'ocr_service_queue',
-      queueOptions: { durable: false },
+      package: 'ocr.v1',
+      protoPath: join(__dirname, '../shared/proto/ocr.proto'),
+      url: process.env.OCR_GRPC_URL || '0.0.0.0:51053',
     },
   });
 
@@ -71,6 +68,6 @@ async function bootstrap() {
 
   console.log(`OCR service is listening on port ${port}`);
   console.log(`Swagger documentation available at: http://localhost:${port}/api/docs`);
-  console.log(`Microservice is listening for RabbitMQ messages`);
+  console.log(`gRPC server listening at ${process.env.OCR_GRPC_URL || '0.0.0.0:51053'}`);
 }
 bootstrap();
