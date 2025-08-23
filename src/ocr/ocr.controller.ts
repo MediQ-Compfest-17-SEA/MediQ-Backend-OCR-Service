@@ -9,6 +9,7 @@ import {
   Param,
   UploadedFile,
   UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
 import { OcrService } from './ocr.service';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -89,7 +90,7 @@ export class OcrController {
     @UploadedFile() file: Express.Multer.File,
   ): Promise<OcrUploadResponseDto> {
     if (!file) {
-      throw new HttpException('No file uploaded', HttpStatus.BAD_REQUEST);
+      throw new BadRequestException('No file uploaded');
     }
 
     try {

@@ -95,7 +95,18 @@ export class OcrService implements OnModuleInit {
                 error?.response?.data ||
                 error?.message ||
                 'unknown_upstream_error';
-            throw new Error(`Failed to process image: ${typeof upstream === 'string' ? upstream : JSON.stringify(upstream)}`);
+
+            // If we already have a normalized upstream OCR engine error string, let controller parse it.
+            if (typeof upstream === 'string' && /^Upstream OCR engine error: status=\d+,\s*body=/.test(upstream)) {
+                throw new Error(upstream);
+            }
+
+            // Otherwise, wrap as a descriptive failure while preserving details
+            throw new Error(
+                `Failed to process image: ${
+                    typeof upstream === 'string' ? upstream : JSON.stringify(upstream)
+                }`,
+            );
         }
     }
 
